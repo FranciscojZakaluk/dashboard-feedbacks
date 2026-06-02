@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard de Feedbacks</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <h1>Dashboard de Feedbacks</h1>
+
+  <p id="status">Carregando dados...</p>
+
+  <div>
+    <h2>Total de avaliações: <span id="total">0</span></h2>
+    <h2>Alertas: <span id="alertas">0</span></h2>
+    <h2>Elogios: <span id="elogios">0</span></h2>
+    <h2>Neutros: <span id="neutros">0</span></h2>
+  </div>
+
+  <table border="1" cellpadding="8">
+    <thead>
+      <tr>
+        <th>Data</th>
+        <th>Aluno</th>
+        <th>Texto</th>
+        <th>Sentimento</th>
+        <th>Estrelas</th>
+        <th>Ação</th>
+      </tr>
+    </thead>
+    <tbody id="tabela"></tbody>
+  </table>
+
+  <script>
+    const SUPABASE_URL = "COLE_AQUI_SUA_PROJECT_URL";
+    const SUPABASE_ANON_KEY = "COLE_AQUI_SUA_ANON_PUBLIC_KEY";
+
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    function formatarData(dataISO) {
+      return new Date(dataISO).toLocaleString("pt-BR");
+    }
+
+    async function carregarDashboard() {
+      const { data, error } = await supabaseClient
+        .from("feedbacks")
+        .select("*")
+        .order("timestamp", { ascending: false });
+
+      if (error) {
+        document.getElementById("status").textContent = "Erro ao carregar dados: " + error.message;
+        return;
+      }
+
+      document.getElementById("status").textContent = "Dados atualizados com sucesso.";
+
+      const total = data.length;
+      const alertas = data.filter(item => item.acao === "ALERTA").length;
+      const elogios = data.filter(item => item.acao === "ELOGIO").length;
+      const neutros = data.filter(item => item.acao === "NEUTRO").length;
+
+      document.getElementById("total").textContent = total;
+      document.getElementById("alertas").textContent = alertas;
+      document.getElementById("elogios").textContent = elogios;
+      document.getElementById("neutros").textContent = neutros;
+
+      document.getElementById("tabela").innerHTML = data.map(item => `
+        <tr>
+          <td>${formatarData(item.timestamp)}</td>
+          <td>${item.nome_aluno || "Aluno"}</td>
+          <td>${item.texto || ""}</td>
+          <td>${item.sentimento || ""}</td>
+          <td>${item.estrelas || ""}</td>
+          <td>${item.acao || ""}</td>
+        </tr>
+      `).join("");
+    }
+
+    carregarDashboard();
+
+    // Atualiza automaticamente a cada 30 segundos
+    setInterval(carregarDashboard, 30000);
+  </script>
+</body>
+</html>
